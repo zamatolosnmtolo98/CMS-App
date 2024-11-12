@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="Public/css/styles.css" content="width=device-width, initial-scale=1.0">
+    <title>Client and Contact Management</title>
+    <link rel="stylesheet" href="Public/css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Client and Contact Management</h1>
+
+        <!-- Tab Navigation -->
+        <div class="tab">
+            <button class="tablinks" onclick="openTab('Clients')">Clients</button>
+            <button class="tablinks" onclick="openTab('Contacts')">Contacts</button>
+        </div>
+
+        <!-- Clients Section -->
+        <div id="Clients" class="tabcontent">
+            <h2>Add Client</h2>
+            <input type="text" id="clientNameInput" placeholder="Enter Client Name" required>
+            <button onclick="addClient()">Add Client</button>
+
+            <h2>Client List</h2>
+            <table id="clientsTable">
+                <thead>
+                    <tr>
+                        <th>Client Name</th>
+                        <th>Client Code</th>
+                        <th>No. of Linked Contacts</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Client rows will be populated here -->
+                </tbody>
+            </table>
+            <div id="clientMessage" class="center"></div>
+        </div>
+
+        <!-- Contacts Section -->
+        <div id="Contacts" class="tabcontent" style="display:none;">
+            <h2>Add Contact</h2>
+            <input type="text" id="contactFullNameInput" placeholder="Enter Full Name (Surname First)" required>
+            <input type="email" id="contactEmailInput" placeholder="Enter Contact Email" required>
+            <select id="clientSelector">
+                <!-- Options populated dynamically from the Client data -->
+            </select>
+            <button onclick="addContact()">Add Contact</button>
+
+            <h2>Contact List</h2>
+            <table id="contactTable">
+                <thead>
+                    <tr>
+                        <th>Contact Full Name</th>
+                        <th>Contact Email</th>
+                        <th>Unlink</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Contact rows will be populated here -->
+                </tbody>
+            </table>
+            <div id="contactMessage" class="center"></div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
