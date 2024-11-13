@@ -1,185 +1,157 @@
-// Client and Contact Data storage
+// Client and Contact Management JavaScript
+
+// Function to open the respective tab content
+function openTab(tabName) {
+  // Hide all tab contents
+  let tabContents = document.querySelectorAll('.tabcontent');
+  tabContents.forEach(content => {
+      content.style.display = 'none';
+  });
+
+  // Show the clicked tab content
+  let activeTab = document.getElementById(tabName);
+  activeTab.style.display = 'block';
+
+  // Toggle active class on tabs for styling purposes
+  let tabButtons = document.querySelectorAll('.tablinks');
+  tabButtons.forEach(button => {
+      button.classList.remove('active');
+  });
+
+  let activeButton = document.querySelector(`[onclick="openTab('${tabName}')"]`);
+  activeButton.classList.add('active');
+}
+
+// Arrays to store clients and contacts
 let clients = [];
 let contacts = [];
 
-// Tab switching functionality
-function openTab(tabName) {
-  const tabContents = document.querySelectorAll(".tabcontent");
-  tabContents.forEach((content) => {
-    content.style.display = "none";
-  });
-  document.getElementById(tabName).style.display = "block";
-}
-
-// Add a client to the database
+// Function to add a new client
 function addClient() {
-  const clientName = document.getElementById("clientNameInput").value.trim();
+  const clientNameInput = document.getElementById('clientNameInput');
+  const clientName = clientNameInput.value.trim();
 
-  if (clientName === "") {
-    showMessage("clientMessage", "Client name is required!", "red");
-    return;
+  // Check if client already exists
+  if (clients.some(client => client.name.toLowerCase() === clientName.toLowerCase())) {
+      document.getElementById('clientMessage').textContent = 'Client already exists!';
+      document.getElementById('clientMessage').className = 'red';
+      return;
   }
 
-  fetch("/add-client", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ clientName }),
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      if (data.success) {
-        showMessage("clientMessage", "Client added successfully!", "green");
-        loadClients(); // Reload the client list
-      } else {
-        showMessage("clientMessage", "Error adding client.", "red");
-      }
-    })
-    .catch((err) => {
-      console.error("Error:", err);
-      showMessage("clientMessage", "Error adding client.", "red");
-    });
+  if (clientName !== '') {
+      const clientCode = `C${clients.length + 1}`;
+      const newClient = { name: clientName, code: clientCode, contacts: [] };
+      clients.push(newClient);
+
+      // Add client to the client list table
+      const clientsTable = document.getElementById('clientsTable').getElementsByTagName('tbody')[0];
+      const newRow = clientsTable.insertRow();
+      newRow.insertCell(0).textContent = clientName;
+      newRow.insertCell(1).textContent = clientCode;
+      newRow.insertCell(2).textContent = '0'; // No linked contacts initially
+
+      // Populate the client selector dropdown in Contacts tab
+      const clientSelector = document.getElementById('clientSelector');
+      const newOption = document.createElement('option');
+      newOption.value = clientCode;
+      newOption.textContent = clientName;
+      clientSelector.appendChild(newOption);
+
+      // Clear the input field and show success message
+      clientNameInput.value = '';
+      document.getElementById('clientMessage').textContent = `Client "${clientName}" added successfully!`;
+      document.getElementById('clientMessage').className = 'green';
+  } else {
+      document.getElementById('clientMessage').textContent = 'Please enter a valid client name.';
+      document.getElementById('clientMessage').className = 'red';
+  }
 }
 
-// Load clients into the table and update client selector dropdown
-function loadClients() {
-  fetch("/get-clients")
-    .then((response) => response.json())
-    .then((data) => {
-      const clientsTable = document
-        .getElementById("clientsTable")
-        .getElementsByTagName("tbody")[0];
-      clientsTable.innerHTML = ""; // Clear existing rows
-
-      const clientSelector = document.getElementById("clientSelector");
-      clientSelector.innerHTML = ""; // Clear existing options
-
-      if (data.clients.length === 0) {
-        // Show message if no clients are found
-        const row = clientsTable.insertRow();
-        const cell = row.insertCell(0);
-        cell.colSpan = 3; // Span across all columns
-        cell.textContent = "No clients found.";
-        cell.style.textAlign = "center";
-      } else {
-        // Populate client table and client selector dropdown
-        data.clients.forEach((client) => {
-          // Populate client table
-          const row = clientsTable.insertRow();
-          row.innerHTML = `
-                    <td>${client.name}</td>
-                    <td>${client.client_code}</td>
-                    <td>${client.linked_contacts}</td>
-                `;
-
-          // Populate client selector dropdown
-          const option = document.createElement("option");
-          option.value = client.id;
-          option.textContent = client.name;
-          clientSelector.appendChild(option);
-        });
-      }
-    })
-    .catch((err) => console.error("Error loading clients:", err));
-}
-
-// Add a contact to the selected client
+// Function to add a new contact
 function addContact() {
-  const contactName = document.getElementById("contactNameInput").value.trim();
-  const contactEmail = document
-    .getElementById("contactEmailInput")
-    .value.trim();
-  const clientId = document.getElementById("clientSelector").value;
+  const contactNameInput = document.getElementById('contactNameInput');
+  const contactEmailInput = document.getElementById('contactEmailInput');
+  const clientSelector = document.getElementById('clientSelector');
+  const contactName = contactNameInput.value.trim();
+  const contactEmail = contactEmailInput.value.trim();
+  const selectedClientCode = clientSelector.value;
 
-  if (contactName === "" || contactEmail === "") {
-    showMessage("contactMessage", "All fields are required!", "red");
-    return;
+  // Check if no clients exist
+  if (clients.length === 0) {
+      document.getElementById('contactMessage').textContent = 'No clients available. Please add a client first.';
+      document.getElementById('contactMessage').className = 'red';
+      return;
   }
 
-  fetch("/add-contact", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ contactName, contactEmail, clientId }),
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      if (data.success) {
-        showMessage("contactMessage", "Contact added successfully!", "green");
-        loadContacts(); // Reload the contact list
-      } else {
-        showMessage("contactMessage", "Error adding contact.", "red");
+  if (contactName !== '' && contactEmail !== '' && selectedClientCode !== '') {
+      const client = clients.find(client => client.code === selectedClientCode);
+
+      // Check if contact already exists in the selected client's list
+      if (client.contacts.some(contact => contact.email === contactEmail)) {
+          document.getElementById('contactMessage').textContent = 'This contact already exists for the selected client.';
+          document.getElementById('contactMessage').className = 'red';
+          return;
       }
-    })
-    .catch((err) => {
-      console.error("Error:", err);
-      showMessage("contactMessage", "Error adding contact.", "red");
-    });
+
+      const newContact = { name: contactName, email: contactEmail };
+      client.contacts.push(newContact);
+      contacts.push(newContact);
+
+      // Add contact to the contact list table
+      const contactTable = document.getElementById('contactTable').getElementsByTagName('tbody')[0];
+      const newRow = contactTable.insertRow();
+      newRow.insertCell(0).textContent = contactName;
+      newRow.insertCell(1).textContent = contactEmail;
+      const actionCell = newRow.insertCell(2);
+      const deleteButton = document.createElement('button');
+      deleteButton.textContent = 'Delete';
+      deleteButton.onclick = function() {
+          deleteContact(newRow, client, newContact);
+      };
+      actionCell.appendChild(deleteButton);
+
+      // Update the client row with the new number of linked contacts
+      const clientRow = Array.from(document.querySelectorAll('#clientsTable tbody tr')).find(tr => {
+          return tr.cells[1].textContent === selectedClientCode;
+      });
+      clientRow.cells[2].textContent = client.contacts.length;
+
+      // Clear the input fields and show success message
+      contactNameInput.value = '';
+      contactEmailInput.value = '';
+      document.getElementById('contactMessage').textContent = `Contact "${contactName}" added successfully!`;
+      document.getElementById('contactMessage').className = 'green';
+  } else {
+      document.getElementById('contactMessage').textContent = 'Please fill in all contact details.';
+      document.getElementById('contactMessage').className = 'red';
+  }
 }
 
-// Load contacts into the table
-function loadContacts() {
-  fetch("/get-contacts")
-    .then((response) => response.json())
-    .then((data) => {
-      const contactTable = document
-        .getElementById("contactTable")
-        .getElementsByTagName("tbody")[0];
-      contactTable.innerHTML = ""; // Clear existing rows
+// Function to delete (unlink) a contact from a client
+function deleteContact(row, client, contact) {
+  // Check if the client has any contacts
+  if (client.contacts.length === 0) {
+      document.getElementById('contactMessage').textContent = 'No contacts linked to this client.';
+      document.getElementById('contactMessage').className = 'red';
+      return;
+  }
 
-      if (data.contacts.length === 0) {
-        // Show message if no contacts are found
-        const row = contactTable.insertRow();
-        const cell = row.insertCell(0);
-        cell.colSpan = 3; // Span across all columns
-        cell.textContent = "No contacts found.";
-        cell.style.textAlign = "center";
-      } else {
-        // Populate contact table
-        data.contacts.forEach((contact) => {
-          const row = contactTable.insertRow();
-          row.innerHTML = `
-                    <td>${contact.name}</td>
-                    <td>${contact.email}</td>
-                    <td><a href="#" onclick="unlinkContact(${contact.id})">Unlink</a></td>
-                `;
-        });
-      }
-    })
-    .catch((err) => console.error("Error loading contacts:", err));
+  // Find the contact in the client's contacts array and remove it
+  const index = client.contacts.indexOf(contact);
+  if (index > -1) {
+      client.contacts.splice(index, 1);
+  }
+
+  // Remove the contact from the contact list table
+  row.remove();
+
+  // Update the client row with the new number of linked contacts
+  const clientRow = Array.from(document.querySelectorAll('#clientsTable tbody tr')).find(tr => {
+      return tr.cells[1].textContent === client.code;
+  });
+  clientRow.cells[2].textContent = client.contacts.length;
+
+  // Show the message for contact unlinking
+  document.getElementById('contactMessage').textContent = `Contact "${contact.name}" has been unlinked from client "${client.name}".`;
+  document.getElementById('contactMessage').className = 'green';
 }
-
-// Unlink a contact from a client
-function unlinkContact(contactId) {
-  fetch(`/unlink-contact/${contactId}`, {
-    method: "DELETE",
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      if (data.success) {
-        showMessage("contactMessage", "Contact removed successfully!", "green");
-        loadContacts(); // Reload the contact list
-      } else {
-        showMessage("contactMessage", "Error removing contact.", "red");
-      }
-    })
-    .catch((err) => console.error("Error removing contact:", err));
-}
-
-// Show Message function (for success/error messages)
-function showMessage(elementId, message, color) {
-  const messageDiv = document.getElementById(elementId);
-  messageDiv.style.color = color;
-  messageDiv.textContent = message;
-  setTimeout(() => {
-    messageDiv.textContent = ""; // Clear message after a short delay
-  }, 3000);
-}
-
-// Load data when the page loads
-window.onload = () => {
-  loadClients();
-  loadContacts();
-};

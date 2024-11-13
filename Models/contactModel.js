@@ -1,41 +1,41 @@
 // Models/contactModel.js
 const db = require('../config/db');
 
-const createContact = (contactFullName, contactEmail, clientId, callback) => {
+// Create a contact
+const createContact = async (contactFullName, contactEmail, clientId) => {
   const unlinkUrl = `/api/contacts/unlink/${clientId}`;
-  const query = `INSERT INTO contacts (contact_full_name, contact_email, client_id, unlink_url) VALUES (?, ?, ?, ?)`;
+  const query = 'INSERT INTO contacts (contact_full_name, contact_email, client_id, unlink_url) VALUES (?, ?, ?, ?)';
 
-  db.query(query, [contactFullName, contactEmail, clientId, unlinkUrl], (err, result) => {
-    if (err) {
-      callback(err, null);
-    } else {
-      callback(null, result);
-    }
-  });
+  try {
+    const [result] = await db.promise().query(query, [contactFullName, contactEmail, clientId, unlinkUrl]);
+    return result;
+  } catch (err) {
+    throw err; // Re-throw the error to be caught by the controller
+  }
 };
 
-const getContacts = (clientId, callback) => {
+// Get contacts for a specific client
+const getContacts = async (clientId) => {
   const query = 'SELECT * FROM contacts WHERE client_id = ?';
 
-  db.query(query, [clientId], (err, results) => {
-    if (err) {
-      callback(err, null);
-    } else {
-      callback(null, results);
-    }
-  });
+  try {
+    const [results] = await db.promise().query(query, [clientId]);
+    return results;
+  } catch (err) {
+    throw err;
+  }
 };
 
-const unlinkContact = (contactId, callback) => {
+// Unlink (delete) a contact
+const unlinkContact = async (contactId) => {
   const query = 'DELETE FROM contacts WHERE contact_id = ?';
 
-  db.query(query, [contactId], (err, result) => {
-    if (err) {
-      callback(err, null);
-    } else {
-      callback(null, result);
-    }
-  });
+  try {
+    const [result] = await db.promise().query(query, [contactId]);
+    return result;
+  } catch (err) {
+    throw err;
+  }
 };
 
 module.exports = { createContact, getContacts, unlinkContact };

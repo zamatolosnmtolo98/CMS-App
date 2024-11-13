@@ -5,10 +5,12 @@ const Client = require('../Models/clientModel');
 const getClients = (req, res) => {
   Client.getClients((err, clients) => {
     if (err) {
-      res.status(500).json({ message: err.message });
-    } else {
-      res.json(clients);
+      return res.status(500).json({ message: err.message });
     }
+    if (clients.length === 0) {
+      return res.status(404).json({ message: 'No clients found' });
+    }
+    res.json(clients);
   });
 };
 
@@ -16,12 +18,21 @@ const getClients = (req, res) => {
 const createClient = (req, res) => {
   const { client_name } = req.body;
 
-  Client.createClient(client_name, (err, result) => {
+  // Check if client already exists
+  Client.getClientByName(client_name, (err, existingClient) => {
     if (err) {
-      res.status(400).json({ message: err.message });
-    } else {
-      res.status(201).json({ message: 'Client created', client: result });
+      return res.status(500).json({ message: err.message });
     }
+    if (existingClient) {
+      return res.status(400).json({ message: 'Client already exists' });
+    }
+
+    Client.createClient(client_name, (err, result) => {
+      if (err) {
+        return res.status(400).json({ message: err.message });
+      }
+      res.status(201).json({ message: 'Client created', client: result });
+    });
   });
 };
 
@@ -29,12 +40,21 @@ const createClient = (req, res) => {
 const deleteClient = (req, res) => {
   const { id } = req.params;
 
-  Client.deleteClient(id, (err, result) => {
+  // Check if client exists before deleting
+  Client.getClientById(id, (err, client) => {
     if (err) {
-      res.status(500).json({ message: err.message });
-    } else {
-      res.json({ message: 'Client deleted' });
+      return res.status(500).json({ message: err.message });
     }
+    if (!client) {
+      return res.status(404).json({ message: 'Client not found' });
+    }
+
+    Client.deleteClient(id, (err, result) => {
+      if (err) {
+        return res.status(500).json({ message: err.message });
+      }
+      res.json({ message: 'Client deleted' });
+    });
   });
 };
 
