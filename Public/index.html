@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Client and Contact Management</title>
+    <link rel="stylesheet" href="/Public/styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h2>Client and Contact Management</h2>
+
+      <!-- Tab Navigation -->
+      <div class="tab">
+        <button class="tablinks" onclick="openTab('Clients')">Clients</button>
+        <button class="tablinks" onclick="openTab('Contacts')">Contacts</button>
+      </div>
+
+      <!-- Clients Tab -->
+      <div id="Clients" class="tabcontent">
+        <h3>Add Client</h3>
+        <input
+          type="text"
+          id="clientNameInput"
+          placeholder="Client Name"
+          required
+        />
+        <button onclick="addClient()">Add Client</button>
+
+        <h3>Client List</h3>
+        <table id="clientsTable">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Client Code</th>
+              <th>No of Linked Contacts</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Client rows will be populated here -->
+          </tbody>
+        </table>
+        <div id="clientMessage" class="center"></div>
+      </div>
+
+      <!-- Contacts Tab -->
+      <div id="Contacts" class="tabcontent" style="display: none">
+        <h3>Add Contact</h3>
+        <input
+          type="text"
+          id="contactNameInput"
+          placeholder="Contact Full Name (Surname First)"
+          required
+        />
+        <input
+          type="email"
+          id="contactEmailInput"
+          placeholder="Contact Email"
+          required
+        />
+        <select id="clientSelector">
+          <!-- Client options will be populated here -->
+        </select>
+        <button onclick="addContact()">Add Contact</button>
+
+        <h3>Contact List</h3>
+        <table id="contactTable">
+          <thead>
+            <tr>
+              <th>Contact Full Name</th>
+              <th>Email Address</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Contact rows will be populated here -->
+          </tbody>
+        </table>
+        <div id="contactMessage" class="center"></div>
+      </div>
+    </div>
+
+    <script>
+      // Client and Contact Data storage
+      let clients = [];
+      let contacts = [];
+
+      // Open Tab function
+      function openTab(tabName) {
+        let tabContents = document.querySelectorAll(".tabcontent");
+        tabContents.forEach((tab) => {
+          tab.style.display = "none";
+        });
+        document.getElementById(tabName).style.display = "block";
+      }
+
+      // Add Client function
+      function addClient() {
+        const clientName = document
+          .getElementById("clientNameInput")
+          .value.trim();
+        if (clientName) {
+          const clientCode = "C" + Math.floor(Math.random() * 10000); // Simple client code generation
+          const client = {
+            name: clientName,
+            code: clientCode,
+            contacts: 0,
+          };
+          clients.push(client);
+          updateClientTable();
+          document.getElementById("clientNameInput").value = ""; // Clear input
+          showMessage("clientMessage", "Client added successfully!", "green");
+        } else {
+          showMessage("clientMessage", "Client name is required!", "red");
+        }
+      }
+
+      // Update Client Table function
+      function updateClientTable() {
+        const tableBody = document.querySelector("#clientsTable tbody");
+        tableBody.innerHTML = ""; // Clear table before updating
+
+        clients.forEach((client) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+                    <td>${client.name}</td>
+                    <td>${client.code}</td>
+                    <td>${client.contacts}</td>
+                `;
+          tableBody.appendChild(row);
+          updateClientSelector();
+        });
+      }
+
+      // Update Client Selector Dropdown
+      function updateClientSelector() {
+        const selector = document.getElementById("clientSelector");
+        selector.innerHTML = ""; // Clear current options
+        clients.forEach((client) => {
+          const option = document.createElement("option");
+          option.value = client.code;
+          option.textContent = client.name;
+          selector.appendChild(option);
+        });
+      }
+
+      // Add Contact function
+      function addContact() {
+        const contactName = document
+          .getElementById("contactNameInput")
+          .value.trim();
+        const contactEmail = document
+          .getElementById("contactEmailInput")
+          .value.trim();
+        const clientCode = document.getElementById("clientSelector").value;
+
+        if (contactName && contactEmail && clientCode) {
+          const contact = {
+            name: contactName,
+            email: contactEmail,
+            clientCode: clientCode,
+          };
+          contacts.push(contact);
+          const client = clients.find((client) => client.code === clientCode);
+          if (client) {
+            client.contacts += 1; // Increase the linked contacts for the client
+          }
+          updateClientTable();
+          updateContactTable();
+          document.getElementById("contactNameInput").value = "";
+          document.getElementById("contactEmailInput").value = "";
+          showMessage("contactMessage", "Contact added successfully!", "green");
+        } else {
+          showMessage("contactMessage", "All fields are required!", "red");
+        }
+      }
+
+      // Update Contact Table function
+      function updateContactTable() {
+        const tableBody = document.querySelector("#contactTable tbody");
+        tableBody.innerHTML = ""; // Clear table before updating
+
+        contacts.forEach((contact) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+                    <td>${contact.name}</td>
+                    <td>${contact.email}</td>
+                    <td><button onclick="removeContact('${contact.email}')">Remove</button></td>
+                `;
+          tableBody.appendChild(row);
+        });
+      }
+
+      // Remove Contact function
+      function removeContact(email) {
+        const index = contacts.findIndex((contact) => contact.email === email);
+        if (index !== -1) {
+          contacts.splice(index, 1);
+          const client = clients.find(
+            (client) => client.code === contacts[index].clientCode
+          );
+          if (client) {
+            client.contacts -= 1; // Decrease the linked contacts count
+          }
+          updateClientTable();
+          updateContactTable();
+          showMessage(
+            "contactMessage",
+            "Contact removed successfully!",
+            "green"
+          );
+        }
+      }
+
+      // Show Message function (for success/error messages)
+      function showMessage(elementId, message, color) {
+        const messageDiv = document.getElementById(elementId);
+        messageDiv.style.color = color;
+        messageDiv.textContent = message;
+        setTimeout(() => {
+          messageDiv.textContent = ""; // Clear message after a short delay
+        }, 3000);
+      }
+    </script>
+  </body>
+</html>

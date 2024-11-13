@@ -4,7 +4,6 @@ function openTab(tabName) {
     tabContents.forEach(content => {
         content.style.display = "none";
     });
-
     document.getElementById(tabName).style.display = "block";
 }
 
@@ -40,7 +39,7 @@ function addClient() {
     });
 }
 
-// Load clients into the table
+// Load clients into the table and update client selector dropdown
 function loadClients() {
     fetch('/get-clients')
     .then(response => response.json())
@@ -48,19 +47,20 @@ function loadClients() {
         const clientsTable = document.getElementById("clientsTable").getElementsByTagName('tbody')[0];
         clientsTable.innerHTML = ""; // Clear existing rows
 
+        // Populate the client table and client selector dropdown
+        const clientSelector = document.getElementById("clientSelector");
+        clientSelector.innerHTML = ''; // Clear existing options
+
         data.clients.forEach(client => {
+            // Populate client table
             const row = clientsTable.insertRow();
             row.innerHTML = `
                 <td>${client.name}</td>
                 <td>${client.client_code}</td>
                 <td style="text-align: center;">${client.linked_contacts}</td>
             `;
-        });
 
-        // Populate the client selector dropdown for contacts
-        const clientSelector = document.getElementById("clientSelector");
-        clientSelector.innerHTML = ''; // Clear existing options
-        data.clients.forEach(client => {
+            // Populate client selector dropdown
             const option = document.createElement("option");
             option.value = client.id;
             option.textContent = client.name;
